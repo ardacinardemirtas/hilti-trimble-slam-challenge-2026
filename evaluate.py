@@ -114,24 +114,23 @@ def quat_mul_batch(q1, q2):
 
 def align_se3(src, dst):
     """
-    Find scale s, rotation R, and translation t minimising ||dst - s*(R @ src.T).T - t||.
+    Find rotation R and translation t minimising ||dst - (R @ src.T).T - t||.
     src, dst: (N, D) arrays (D=3 for SLAM, D=2 for Localization-xy).
-    Returns (R [DxD], t [D], s [float]).
+    Returns (R [DxD], t [D], s=1.0).
     """
     n, d = src.shape
     mu_s = src.mean(0)
     mu_d = dst.mean(0)
     src_c = src - mu_s
     dst_c = dst - mu_d
-    var_s = (src_c ** 2).sum() / n
     H = src_c.T @ dst_c / n
     U, S_vals, Vt = np.linalg.svd(H)
     W = np.eye(d)
     if np.linalg.det(U) * np.linalg.det(Vt) < 0:
         W[d - 1, d - 1] = -1
     R = Vt.T @ W @ U.T
-    s = np.trace(np.diag(S_vals) @ W) / var_s
-    t = mu_d - s * R @ mu_s
+    s = 1.0
+    t = mu_d - R @ mu_s
     return R, t, s
 
 

@@ -19,7 +19,7 @@ from challenge_tools_lib import ChallengeToolsLib
 class GTPub(Node):
     def __init__(self, output_filename):
         super().__init__('trajectory_logger')
-        self.fixed_frame = "map"
+        self.fixed_frame = "global"
 
         self.subscription2 = self.create_subscription(PoseWithCovarianceStamped, "/ov_msckf/poseimu", self.pose_callback, 10)
 
@@ -62,7 +62,7 @@ class GTPub(Node):
     def pose_callback(self, msg):
         print("got pose_callback - ", self.counter)
 
-        from_frame = 'map'
+        from_frame = 'global'
         to_frame   = 'imu'
 
         current_time =  rclpy.time.Time.from_msg(msg.header.stamp)

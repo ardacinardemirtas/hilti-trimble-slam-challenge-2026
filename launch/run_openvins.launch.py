@@ -93,6 +93,7 @@ def launch_setup(context):
             {"max_cameras": LaunchConfiguration("max_cameras")},
             {"save_total_state": LaunchConfiguration("save_total_state")},
             {"config_path": config_path},
+            {"use_sim_time": True},
         ],
     )
 
@@ -122,6 +123,7 @@ def launch_setup(context):
             "/cam1/image_raw/compressed",
             "/cam0/image_raw",
             "/cam1/image_raw",
+            "--ros-args", "-p", "use_sim_time:=true",
         ],
     )
 

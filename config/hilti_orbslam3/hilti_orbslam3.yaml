@@ -1,0 +1,126 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# System config
+#--------------------------------------------------------------------------------------------
+File.version: "1.0"
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters — Insta360 One-RS dual fisheye (KannalaBrandt8 / pinhole-equidistant)
+# Calibration from config/hilti_openvins/kalibr_imucam_chain.yaml
+#--------------------------------------------------------------------------------------------
+
+Camera.type: "KannalaBrandt8"
+
+# cam0 (left / Camera1)
+Camera1.fx: 465.3015482593691
+Camera1.fy: 465.32303798346413
+Camera1.cx: 730.0455886686005
+Camera1.cy: 720.1427007671206
+
+# Kannala-Brandt k1-k4 (Kalibr "equidistant" = KB4)
+Camera1.k1: 0.025800718903376804
+Camera1.k2: -0.010909240777406872
+Camera1.k3: -0.0016899537986031076
+Camera1.k4: 0.00014766801645260894
+
+# cam1 (right / Camera2)
+Camera2.fx: 465.43630225493564
+Camera2.fy: 465.4719940813323
+Camera2.cx: 733.436396975063
+Camera2.cy: 718.7408714249976
+
+Camera2.k1: 0.024723386256038673
+Camera2.k2: -0.010754674082879279
+Camera2.k3: -0.0016168993760219885
+Camera2.k4: 0.00013675348254771203
+
+# Dual-fisheye 180° FoV: both cameras cover the full equatorial belt.
+# Setting full column range so ORB_SLAM3 uses geometric verification across both images.
+Camera1.overlappingBegin: 0
+Camera1.overlappingEnd: 1471
+
+Camera2.overlappingBegin: 0
+Camera2.overlappingEnd: 1471
+
+Camera.width: 1472
+Camera.height: 1440
+
+Camera.fps: 30.0
+
+# Color order (0: BGR, 1: RGB); ignored for grayscale
+Camera.RGB: 0
+
+#--------------------------------------------------------------------------------------------
+# Stereo extrinsics
+# T_c1_c2 = T_{cam0 from cam1} = T_cam0_imu * inv(T_cam1_imu)
+# Derived from Kalibr kalibr_imucam_chain.yaml (Pinhole Equidistant section)
+#
+# Note: cameras are back-to-back (opposite directions), baseline ≈ 40 mm.
+# Most scene features will appear in only one camera → treated as monocular/"far" points.
+# ThDepth is set large to keep as many close stereo points as possible.
+#--------------------------------------------------------------------------------------------
+Stereo.T_c1_c2: !!opencv-matrix
+  rows: 4
+  cols: 4
+  dt: f
+  data: [-0.999803492334060,  0.018294655933830,  0.007634283259233,  0.000863242417813,
+          0.018300056503610,  0.999832336292682,  0.000638150047861,  0.001036527943500,
+         -0.007621328531440,  0.000777732461493, -0.999970654811248, -0.040035691234343,
+          0.0, 0.0, 0.0, 1.0]
+
+# Close/Far threshold in multiples of baseline (baseline ≈ 0.040 m).
+# 600 × 0.040 m = 24 m — keeps most construction-site features in "close" triangulation.
+Stereo.ThDepth: 600.0
+
+#--------------------------------------------------------------------------------------------
+# IMU
+# T_b_c1 = T_{imu from cam0} = inv(T_cam0_imu)
+# Noise params from config/hilti_openvins/kalibr_imu_chain.yaml
+#
+# Note: Kalibr reports timeshift_cam_imu ≈ −6.57 ms. ORB_SLAM3 has no explicit time-offset
+# parameter; the effect is small and absorbed by the IMU pre-integration window.
+#--------------------------------------------------------------------------------------------
+IMU.T_b_c1: !!opencv-matrix
+  rows: 4
+  cols: 4
+  dt: f
+  data: [ 0.017214474772216,  0.999826317455550, -0.007141203091335, -0.016004712088637,
+         -0.000803464212050, -0.007128426214556, -0.999974269661457, -0.015624106669468,
+         -0.999851497125237,  0.017219769539067,  0.000680612551105,  0.020410922899559,
+          0.0, 0.0, 0.0, 1.0]
+
+IMU.NoiseGyro: 0.00047032046       # rad/s/√Hz
+IMU.NoiseAcc:  0.00285891188       # m/s²/√Hz
+IMU.GyroWalk:  0.00036433633       # rad/s²/√Hz
+IMU.AccWalk:   0.00130039805       # m/s³/√Hz
+IMU.Frequency: 1000.0
+
+#--------------------------------------------------------------------------------------------
+# ORB Parameters
+#--------------------------------------------------------------------------------------------
+
+# Increase features vs TUM-VI: fisheye 1472×1440 has much more image area
+ORBextractor.nFeatures: 1500
+
+ORBextractor.scaleFactor: 1.2
+ORBextractor.nLevels: 8
+
+# Lower thresholds for construction sites: highly textured but variable lighting
+ORBextractor.iniThFAST: 20
+ORBextractor.minThFAST: 7
+
+#--------------------------------------------------------------------------------------------
+# Viewer Parameters (viewer disabled at runtime — headless HPC)
+#--------------------------------------------------------------------------------------------
+Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameLineWidth: 1.0
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize: 2.0
+Viewer.CameraSize: 0.08
+Viewer.CameraLineWidth: 3.0
+Viewer.ViewpointX: 0.0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -3.5
+Viewer.ViewpointF: 500.0
+Viewer.imageViewScale: 1.0
