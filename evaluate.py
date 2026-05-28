@@ -148,7 +148,7 @@ def run_score(errors):
 
 # ── Single-run evaluation ──────────────────────────────────────────────────────
 
-def evaluate_run(gt_file, pred_file, task='slam'):
+def evaluate_run(gt_file, pred_file, task='slam', no_align=False):
     """
     Evaluate one predicted trajectory against ground truth.
 
@@ -216,21 +216,35 @@ def evaluate_run(gt_file, pred_file, task='slam'):
         gt_eval = gt_m
         pred_eval = pred_m
 
-    # Align (SLAM: SE3 in 3-D; Localization: SE2 in 2-D, but we use the same routine)
-    try:
-        R, t, s = align_se3(pred_eval, gt_eval)
-        pred_aligned = s * (R @ pred_eval.T).T + t
-    except Exception as e:
-        r['error_msg'] = f"Alignment failed: {e}"
-        return r
+    if no_align:
+        errors = np.linalg.norm(gt_eval - pred_eval, axis=1)
+        r['errors'] = errors
+        r['gt_pos_matched'] = gt_m
+        r['pred_pos_aligned'] = pred_m.copy()
+        r['align_R'] = None
+        r['align_t'] = None
+        r['align_s'] = None
+    else:
+        # Align (SLAM: SE3 in 3-D; Localization: SE2 in 2-D, but we use the same routine)
+        try:
+            R, t, s = align_se3(pred_eval, gt_eval)
+            pred_aligned = s * (R @ pred_eval.T).T + t
+        except Exception as e:
+            r['error_msg'] = f"Alignment failed: {e}"
+            return r
 
-    errors = np.linalg.norm(gt_eval - pred_aligned, axis=1)
-    r['errors'] = errors
-    r['gt_pos_matched'] = gt_m
-    r['pred_pos_aligned'] = s * (R @ pred_m.T).T + t  # always 3-D aligned
-    r['align_R'] = R
-    r['align_t'] = t
-    r['align_s'] = s
+        errors = np.linalg.norm(gt_eval - pred_aligned, axis=1)
+        r['errors'] = errors
+        r['gt_pos_matched'] = gt_m
+        # For localization R is 2×2; apply only to xy, keep z unchanged
+        if task == 'localization':
+            xy_aligned = s * (R @ pred_m[:, :2].T).T + t
+            r['pred_pos_aligned'] = np.column_stack([xy_aligned, pred_m[:, 2]])
+        else:
+            r['pred_pos_aligned'] = s * (R @ pred_m.T).T + t
+        r['align_R'] = R
+        r['align_t'] = t
+        r['align_s'] = s
     r['score'] = run_score(errors)
     r['ate_mean']   = float(errors.mean())
     r['ate_rmse']   = float(np.sqrt((errors ** 2).mean()))
@@ -625,6 +639,8 @@ def main():
                         help="Save Sim3-aligned trajectories to best-dir (default: on)")
     parser.add_argument('--best-raw', dest='best_aligned', action='store_false',
                         help="Save raw (unaligned) trajectories to best-dir")
+    parser.add_argument('--no-align', action='store_true', default=False,
+                        help="Skip Procrustes alignment — evaluate raw submitted poses")
     parser.add_argument('--max-ts-diff', type=float, default=MAX_TIMESTAMP_DIFF,
                         help=f"Max timestamp diff for matching (default: {MAX_TIMESTAMP_DIFF} s)")
     args = parser.parse_args()
@@ -647,7 +663,7 @@ def main():
 
     results = []
     for gt_file, pred_file in pairs:
-        r = evaluate_run(gt_file, pred_file, task=args.task)
+        r = evaluate_run(gt_file, pred_file, task=args.task, no_align=args.no_align)
         print_run_report(r)
         if args.plot or args.plot_dir:
             plot_run(r, out_dir=args.plot_dir)

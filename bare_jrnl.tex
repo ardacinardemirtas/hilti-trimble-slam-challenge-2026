@@ -1,0 +1,563 @@
+% bare_jrnl.tex
+% V1.4b
+% 2015/08/26
+% by Michael Shell
+% see http://www.michaelshell.org/
+% for current contact information.
+%
+% This is a skeleton file demonstrating the use of IEEEtran.cls
+% (requires IEEEtran.cls version 1.8b or later) with an IEEE
+% journal paper.
+%
+% Support sites:
+% http://www.michaelshell.org/tex/ieeetran/
+% http://www.ctan.org/pkg/ieeetran
+% and
+% http://www.ieee.org/
+
+%%*************************************************************************
+%% Legal Notice:
+%% This code is offered as-is without any warranty either expressed or
+%% implied; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE!
+%% User assumes all risk.
+%% In no event shall the IEEE or any contributor to this code be liable for
+%% any damages or losses, including, but not limited to, incidental,
+%% consequential, or any other damages, resulting from the use or misuse
+%% of any information contained here.
+%%
+%% All comments are the opinions of their respective authors and are not
+%% necessarily endorsed by the IEEE.
+%%
+%% This work is distributed under the LaTeX Project Public License (LPPL)
+%% ( http://www.latex-project.org/ ) version 1.3, and may be freely used,
+%% copied, modified and distributed. A copy of the LPPL, version 1.3, is
+%% included in the base LaTeX documentation of all distributions of LaTeX
+%% released 2003/12/01 or later.
+%% Retain all contribution notices and credits.
+%% ** Modified files should be clearly indicated as such, including  **
+%% ** renaming them and changing author support contact information. **
+%%*************************************************************************
+
+
+% *** Authors should verify (and, if needed, correct) their LaTeX system  ***
+% *** with the testflow diagnostic prior to trusting their LaTeX platform  ***
+% *** with production work. The IEEE's font choices and paper sizes can    ***
+% *** trigger bugs that do not appear when using other class files.        ***
+% The testflow support page is at:
+% http://www.michaelshell.org/tex/testflow/
+
+
+\documentclass[journal]{IEEEtran}
+% Some very useful LaTeX packages include:
+% (uncomment the ones you want to load)
+
+
+% *** MATH PACKAGES ***
+%
+\usepackage{amsmath}
+% A popular package from the American Mathematical Society that provides
+% many useful and powerful commands for dealing with mathematics.
+%
+% Note that the amsmath package sets \interdisplaylinepenalty to 10000
+% thus preventing page breaks from occurring within multiline equations. Use:
+%\interdisplaylinepenalty=2500
+% after loading amsmath to restore such page breaks as IEEEtran.cls normally
+% does. amsmath.sty is already installed on most LaTeX systems. The latest
+% version and documentation can be obtained at:
+% http://www.ctan.org/pkg/amsmath
+
+
+% *** HYPERLINKS ***
+%
+\usepackage{hyperref}
+% Provides \href{url}{text} for clickable links in PDF output.
+
+
+% correct bad hyphenation here
+\hyphenation{op-tical net-works semi-conduc-tor}
+
+
+\begin{document}
+
+% paper title
+% Titles are generally capitalized except for words such as a, an, and, as,
+% at, but, by, for, in, nor, of, on, or, the, to and up, which are usually
+% not capitalized unless they are the first or last word of the title.
+% Linebreaks \\ can be used within to get better formatting as desired.
+% Do not put math or special symbols in the title.
+\title{Two-Stage Visual-Inertial SLAM with Sliding-Window Filtering and
+Global Bundle Adjustment for the Hilti $\times$ Trimble SLAM Challenge 2026}
+
+% author names and IEEE memberships
+% note positions of commas and nonbreaking spaces ( ~ ) LaTeX will not break
+% a structure at a ~ so this keeps an author's name from being broken across
+% two lines.
+% use \thanks{} to gain access to the first footnote area
+% a separate \thanks must be used for each paragraph as LaTeX2e's \thanks
+% was not built to handle multiple paragraphs
+\author{Arda~C.~Demirta\c{s}$^{*1}$,
+        Berkay~\c{S}ekeroglu$^{*1}$,
+        and~Atakan~Topaloglu$^{*1}$%
+\thanks{$^{*}$All authors contributed equally to this submission.}%
+\thanks{$^{1}$The authors are with the Department of Information Technology
+  and Electrical Engineering (D-ITET), ETH Z\"urich, 8092 Z\"urich,
+  Switzerland. \texttt{\{ademirtas, bsekeroglu, atopaloglu\}@ethz.ch}}%
+\thanks{Manuscript submitted to the Hilti $\times$ Trimble
+  SLAM Challenge 2026.}}
+
+% make the title area
+\maketitle
+
+% As a general rule, do not put math, special symbols or citations
+% in the abstract or keywords.
+\begin{abstract}
+This report summarizes our submission to the Hilti $\times$ Trimble SLAM Challenge 2026,
+covering both the SLAM and Localization tasks.
+We developed a two-stage visual-inertial SLAM pipeline: first, a causal
+multi-camera MSCKF-based estimator produces an initial trajectory and feature
+tracks; second, an offline visual-inertial bundle adjustment refines all
+trajectories using the full sequence.
+During development, the main bottleneck was not only drift, but reliable
+initialization and sustained feature tracking in dynamic-start, low-texture,
+and low-light sequences.
+Our final SLAM submission relies on dynamic initialization, reduced
+playback rate for stable tracking, and per-sequence selection among a small
+set of robustness-oriented filter configurations.
+For the Localization task, we register the SLAM trajectories to the floorplan
+coordinate frame using a single cam0 anchor pose provided per sequence,
+applying an SE(2) transform derived from the IMU-to-camera extrinsic calibration
+and the ground-truth initialisation pose.
+\end{abstract}
+
+% Note that keywords are not normally used for peerreview papers.
+\begin{IEEEkeywords}
+Visual-inertial odometry, SLAM, MSCKF, bundle adjustment, IMU preintegration, OpenVINS, COLMAP,
+floorplan localization, map alignment, Hilti SLAM Challenge.
+\end{IEEEkeywords}
+
+
+% For peer review papers, you can put extra information on the cover
+% page as needed:
+% \ifCLASSOPTIONpeerreview
+% \begin{center} \bfseries EDICS Category: 3-BBND \end{center}
+% \fi
+%
+% For peerreview papers, this IEEEtran command inserts a page break and
+% creates the second title. It will be ignored for other modes.
+\IEEEpeerreviewmaketitle
+
+
+\section{Introduction}
+% The very first letter is a 2 line initial drop letter followed
+% by the rest of the first word in caps.
+%
+% form to use if the first word consists of a single letter:
+% \IEEEPARstart{A}{demo} file is ....
+%
+% form to use if you need the single drop letter followed by
+% normal text (unknown if ever used by IEEE):
+% \IEEEPARstart{A}{}
+%
+% Some journals put the first two words in caps:
+% \IEEEPARstart{T}{his demo} file is ....
+%
+% Here we have the typical use of a "T" for an initial drop letter
+% and "HIS" in caps to complete the first word.
+\IEEEPARstart{T}{his} report describes our final approach for the Hilti
+$\times$ Trimble SLAM Challenge 2026 trajectory-estimation task.
+Since the SLAM task evaluates trajectories in any preferred reference frame,
+we focused on producing geometrically consistent trajectories with high
+temporal coverage and low drift.
+
+The dataset exposed two dominant issues.
+First, several sequences were difficult to initialize because they began with
+motion, low visual texture, or rapid viewpoint changes.
+Second, even when initialization succeeded, feature-poor regions caused drift
+that a causal sliding-window estimator could not fully recover.
+
+Our final pipeline addresses these issues with a two-stage design.
+We use OpenVINS \cite{geneva2020openvins} as the front-end estimator because
+it provides robust MSCKF-based visual-inertial filtering and exposes the
+feature tracks required for later refinement.
+We then apply an offline visual-inertial bundle adjustment stage to all
+trajectories to reduce residual drift, using the
+\href{https://github.com/B1ueber2y/colmap/tree/features/imu}{COLMAP visual-inertial fork}
+\cite{schoenberger2016sfm}.
+
+The final system consists of five steps:
+\begin{enumerate}
+    \item Run an MSCKF visual-inertial filter with KLT tracking across both
+          fisheye cameras and IMU propagation at 1000\,Hz.
+    \item Generate multiple candidate trajectories using robustness-oriented
+          filter configurations.
+    \item Select the best candidate trajectory for each sequence.
+    \item Reconstruct feature tracks from the filter output.
+    \item Refine all trajectories using offline visual-inertial bundle adjustment.
+\end{enumerate}
+
+
+
+\section{Filter Initialization and Configuration}
+
+\subsection{Initialization Failure Modes}
+
+Initialization was the primary failure mode across the 30 sequences.
+The static initializer requires feature tracks to survive for at least half
+the initialization window in the older half of the sliding window before
+attempting state recovery.
+Fast motion or low visual texture breaks KLT tracks before they age
+sufficiently, blocking initialization indefinitely.
+
+A representative case is \texttt{floor\_EG/2025-12-02/run\_2}.
+The static initializer waits for a still-to-moving jerk event that does not
+occur until approximately 59\,s into the recording, when the operator
+adjusts their grip.
+Switching to dynamic initialization with a 1.0\,s window allowed the filter
+to trigger on the early camera-shake motion, reducing the initialization
+delay to 5.6\,s.
+
+\subsection{Dynamic Initialization}
+
+Dynamic initialization triggers on generally excited angular velocity rather
+than requiring a static-to-moving transition.
+This was the single most effective intervention, converting several delayed
+or failed runs into complete trajectories.
+It is particularly important for sequences that begin while the operator is
+already walking.
+
+\subsection{Initialization Window Duration}
+
+A shorter initialization window (1.0\,s versus the 3.0\,s default) reduces
+the track-survival requirement at a minor cost to inertial alignment quality.
+On dynamic-start and low-texture sequences this trade-off was clearly
+beneficial.
+
+\subsection{Reduced Playback Rate}
+
+At full playback speed, the CPU could not consistently process every image
+frame at the nominal 30\,Hz camera rate, reaching only 16--23 frames per
+second.
+This forced the optical-flow tracker to operate on larger apparent
+inter-frame displacements, shortening feature tracks and degrading both
+initialization and sustained estimation.
+Processing at 0.5$\times$ playback speed restored near-nominal tracking
+performance and increased pose output density from approximately 16--23\,Hz
+to approximately 29\,Hz.
+
+\subsection{Robustness-Oriented Filter Settings}
+
+We designed five filter variants around the baseline configuration.
+The useful changes were: increasing the number of tracked features and
+persistent SLAM landmarks; extending the clone horizon; applying CLAHE
+contrast normalization; inflating IMU process noise; and enabling
+zero-velocity updates (ZUPT).
+
+Inflating the IMU process noise covariance down-weights the inertial
+contribution to the EKF update, allowing visual measurements to dominate
+when inertial biases are poorly observable (for example, slow walking in
+low-contrast basement corridors).
+The trade-off is increased susceptibility to IMU integration drift under
+fast motion.
+
+Increasing tracked features to 800 and SLAM landmarks to 100 widens the
+reprojection constraint set.
+Extending the clone horizon to 15 allows the filter to accumulate longer-baseline
+observations, improving triangulation depth in texture-sparse regions.
+
+ZUPT constrains velocity and rotation rate to zero during detected stationary
+intervals, strongly anchoring bias estimation.
+In practice it had limited impact because most sequences involve continuous
+walking with few clear stationary periods.
+
+
+\section{Per-Sequence Selection}
+
+No single filter configuration was best for all sequences.
+We generated multiple candidate trajectories per run and selected the final
+one using three criteria.
+
+For the five released ground-truth sequences, selection was based on ATE after
+SE(3) alignment.
+For the remaining sequences, we used trajectory plausibility and
+multi-configuration consensus.
+Specifically, we checked whether the horizontal extent was consistent with the
+expected floor geometry and whether vertical drift remained below approximately
+2\,m (elevated vertical drift reliably indicates unconstrained IMU bias
+divergence in monocular mode).
+When three or more independent configurations converged on the same trajectory
+shape, that shape was accepted as correct.
+
+Table~\ref{tab:config_distribution} summarizes the final selected
+configuration types.
+
+% An example of a floating table. Note that, for IEEE style tables, the
+% \caption command should come BEFORE the table and, given that table
+% captions serve much like titles, are usually capitalized except for words
+% such as a, an, and, as, at, but, by, for, in, nor, of, on, or, the, to
+% and up, which are usually not capitalized unless they are the first or
+% last word of the caption. Table text will default to \footnotesize as
+% the IEEE normally uses this smaller font for tables.
+% The \label must come after \caption as always.
+\begin{table}[!t]
+\renewcommand{\arraystretch}{1.2}
+\caption{Final Submission Configuration Types}
+\label{tab:config_distribution}
+\centering
+\begin{tabular}{l c}
+\hline
+Configuration type & Runs \\
+\hline
+Dynamic init, 1.0\,s window, 0.5$\times$ playback & 13 \\
+Dynamic init, 3.0\,s window, 0.5$\times$ playback & 10 \\
+Baseline, full playback speed & 3 \\
+Inflated IMU process noise, 0.5$\times$ playback & 2 \\
+High-feature, extended clone horizon, 0.5$\times$ playback & 2 \\
+\hline
+\end{tabular}
+\end{table}
+
+Dynamic initialization at 0.5$\times$ playback accounts for 77\% of the
+final submission.
+
+
+\section{Offline Visual-Inertial Bundle Adjustment}
+
+We applied an offline visual-inertial bundle adjustment to all runs to
+refine the filter output.
+The optimization is seeded directly from the filter: the feature publisher
+outputs, at each camera frame, the 3D position, pixel coordinates, and
+stable track ID of every active KLT-tracked feature.
+Accumulating these messages reconstructs the full track history without
+additional feature extraction or descriptor matching.
+A typical run yields approximately 20k--50k triangulated 3D points and
+800k 2D reprojection observations.
+
+The bundle adjustment minimizes the joint cost
+\begin{equation}
+\min_{\mathbf{T},\mathbf{p},\mathbf{b}}
+\sum_{(i,j)} \rho\!\left(\left\|\mathbf{r}^{ij}_{\mathrm{reproj}}\right\|^2_{\Sigma_c}\right)
++ \sum_k \left\|\mathbf{r}^{k}_{\mathrm{IMU}}\right\|^2_{\Sigma_{\mathrm{IMU}}},
+\label{eq:viba}
+\end{equation}
+where $\mathbf{T}$ are camera poses, $\mathbf{p}$ are landmark positions,
+$\mathbf{b}$ denotes inertial states and biases,
+$\mathbf{r}^{ij}_{\mathrm{reproj}}$ are per-observation reprojection
+residuals, $\mathbf{r}^{k}_{\mathrm{IMU}}$ are IMU preintegration residuals
+computed using the on-manifold analytical formulation of Forster et
+al.~\cite{forster2017preintegration}, and $\rho(\cdot)$ is a Huber loss.
+The optimization variables are refined jointly without fixing the filter
+poses.
+
+The principal limitation is that KLT tracks carry no feature descriptors.
+When a track is lost due to occlusion or fast motion, the physical point
+re-appears with a new track ID, breaking the observation chain.
+This weakens the global reprojection term, particularly in environments with
+heavy occlusion or repetitive structure.
+
+Table~\ref{tab:viba_result} summarises the aggregate VI-BA improvement
+over the filter baseline on the five ground-truth sequences.
+
+\begin{table}[!t]
+\renewcommand{\arraystretch}{1.2}
+\caption{Effect of Offline VI-BA (averaged over 5 GT sequences)}
+\label{tab:viba_result}
+\centering
+\begin{tabular}{l c}
+\hline
+Method & ATE RMSE (m) \\
+\hline
+Filter baseline (mean, 5 GT runs) & 0.327 \\
+After VI-BA (mean, 5 GT runs) & \textbf{0.262} \\
+Mean score improvement & \textbf{+2.4\,pts} \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\section{Results}
+
+Table~\ref{tab:gt_results} reports per-run performance on the five released
+ground-truth sequences after SE(3) alignment.
+
+\begin{table}[!t]
+\renewcommand{\arraystretch}{1.2}
+\caption{Per-Run Results on the Five Ground-Truth Sequences}
+\label{tab:gt_results}
+\centering
+\begin{tabular}{l c c c c}
+\hline
+Sequence & \multicolumn{2}{c}{ATE RMSE (m)} & \multicolumn{2}{c}{Score} \\
+         & Filter & VI-BA & Filter & VI-BA \\
+\hline
+floor\_1 / 2025-05-05 / run\_1   & 0.300 & \textbf{0.233} & 85.7 & \textbf{88.3} \\
+floor\_2 / 2025-05-05 / run\_1   & 0.446 & \textbf{0.390} & 81.4 & \textbf{83.3} \\
+floor\_2 / 2025-10-28 / run\_1   & 0.248 & \textbf{0.184} & 89.7 & \textbf{92.5} \\
+floor\_2 / 2025-10-28 / run\_2   & 0.262 & \textbf{0.192} & 89.5 & \textbf{91.9} \\
+floor\_UG1 / 2025-10-16 / run\_1 & 0.378 & \textbf{0.311} & 82.5 & \textbf{85.1} \\
+\hline
+\textbf{Mean}                    & 0.327 & \textbf{0.262} & 85.8 & \textbf{88.2} \\
+\hline
+\end{tabular}
+\end{table}
+
+The weakest result is \texttt{floor\_2/2025-05-05/run\_1}, which contains a
+long feature-poor corridor where a monocular visual-inertial filter without
+loop closure accumulates translational drift.
+
+
+\section{Localization Task}
+
+Each SLAM trajectory is expressed in an arbitrary global frame; we register
+it to the floorplan map using the single ground-truth cam0 anchor pose
+$\mathbf{T}^{\text{map}}_{\text{cam}_0,\text{gt}}$ provided per sequence.
+
+SLAM poses are output in the IMU frame, so the anchor SLAM pose is first
+converted to cam0 using the Kalibr extrinsic $\mathbf{T}^{\text{imu}}_{\text{cam}_0}$:
+\begin{equation}
+  \mathbf{T}^{\text{global}}_{\text{cam}_0,k}
+    = \mathbf{T}^{\text{global}}_{\text{imu},k}\,\mathbf{T}^{\text{imu}}_{\text{cam}_0}.
+\end{equation}
+The global-to-map transform follows as
+\begin{equation}
+  \mathbf{T}^{\text{map}}_{\text{global}}
+    = \mathbf{T}^{\text{map}}_{\text{cam}_0,\text{gt}}\,
+      \bigl(\mathbf{T}^{\text{global}}_{\text{cam}_0,k}\bigr)^{-1}.
+\end{equation}
+Because the SLAM estimator maintains a gravity-aligned frame, the residual
+pitch and roll of $\mathbf{T}^{\text{map}}_{\text{global}}$ are noise.
+We zero them, retaining only the yaw $\psi$ and translation $\mathbf{t}$,
+and apply the resulting planar transform to every pose in the trajectory:
+\begin{equation}
+  \mathbf{T}^{\text{map}}_{\text{cam}_0,i}
+    = \begin{bmatrix} \mathbf{R}_z(\psi) & \mathbf{t} \\ \mathbf{0}^\top & 1 \end{bmatrix}
+      \mathbf{T}^{\text{global}}_{\text{imu},i}\,\mathbf{T}^{\text{imu}}_{\text{cam}_0}.
+\end{equation}
+For sequences where the filter initializes after the anchor epoch, we
+decouple the rotation and translation estimates: the yaw is derived from
+the first filter-initialized pose, while the translation is set so that
+the anchor-epoch SLAM position maps exactly to the ground-truth map position.
+
+
+\section{Discussion}
+
+Robust initialization mattered more than back-end complexity.
+Dynamic initialization was the most impactful change, converting delayed or
+failed runs into complete trajectories.
+The reduced playback rate was equally important in practice: processing frames
+faster than the optical-flow tracker can reliably handle degrades track
+quality and ultimately causes filter divergence, even though the underlying
+data is identical.
+
+The offline bundle-adjustment stage confirmed that full-trajectory
+optimization recovers drift that is irrecoverable in a sliding-window filter.
+The main limitation is the reliance on KLT tracks without descriptors.
+Replacing the KLT front-end with descriptor-based local features and
+re-identification across track breaks (for example, ALIKED with LightGlue
+matching) would yield longer, more constraining observation chains and
+likely improve the back-end substantially, particularly in the occluded
+basement environments.
+
+
+\section{Conclusion}
+
+We presented a two-stage visual-inertial SLAM pipeline combining an MSCKF
+sliding-window filter with offline global visual-inertial bundle adjustment.
+The most effective practical decisions were dynamic initialization, reduced
+playback speed for stable feature tracking, and per-sequence selection among
+a small number of targeted filter variants.
+For the Localization task, SLAM trajectories are registered to the floorplan
+frame via a gravity-consistent planar transform derived from the IMU-to-camera
+extrinsic calibration and a single ground-truth anchor pose per sequence.
+
+
+% use section* for acknowledgment
+\section*{Acknowledgment}
+
+The authors thank their supervisors Zador Pataki
+(\texttt{zador.pataki@inf.ethz.ch}), Xudong Jiang
+(\texttt{xudong.jiang@inf.ethz.ch}), and Shaohui Liu
+(\texttt{shaohui.liu@inf.ethz.ch}) of the Department of Computer Science,
+ETH Z\"urich, and Paul-Edouard Sarlin (\texttt{psarlin@google.com}) of
+Google, for their guidance throughout this project.
+We also thank the organizers of the Hilti $\times$ Trimble SLAM Challenge 2026.
+
+
+% trigger a \newpage just before the given reference
+% number - used to balance the columns on the last page
+% adjust value as needed - may need to be readjusted if
+% the document is modified later
+%\IEEEtriggeratref{8}
+% The "triggered" command can be changed if desired:
+%\IEEEtriggercmd{\enlargethispage{-5in}}
+
+% references section
+
+% can use a bibliography generated by BibTeX as a .bbl file
+% BibTeX documentation can be easily obtained at:
+% http://mirror.ctan.org/biblio/bibtex/contrib/doc/
+% The IEEEtran BibTeX style support page is at:
+% http://www.michaelshell.org/tex/ieeetran/bibtex/
+%\bibliographystyle{IEEEtran}
+% argument is your BibTeX string definitions and bibliography database(s)
+%\bibliography{IEEEabrv,../bib/paper}
+%
+% <OR> manually copy in the resultant .bbl file
+% set second argument of \begin to the number of references
+% (used to reserve space for the reference number labels box)
+\begin{thebibliography}{1}
+
+\bibitem{geneva2020openvins}
+P.~Geneva, K.~Eckenhoff, W.~Lee, Y.~Yang, and G.~Huang,
+``OpenVINS: A research platform for visual-inertial estimation,''
+in \emph{Proc. IEEE Int. Conf. Robot. Autom. Workshop on Open Source
+Systems in Robotics}, 2020. \texttt{https://github.com/rpng/open\_vins}
+
+\bibitem{schoenberger2016sfm}
+J.~L. Sch\"onberger and J.-M. Frahm,
+``Structure-from-motion revisited,''
+in \emph{Proc. IEEE Conf. Comput. Vis. Pattern Recognit.}, 2016,
+pp.~4104--4113.
+
+\bibitem{forster2017preintegration}
+C.~Forster, L.~Carlone, F.~Dellaert, and D.~Scaramuzza,
+``On-manifold preintegration for real-time visual-inertial odometry,''
+\emph{IEEE Trans. Robot.}, vol.~33, no.~1, pp.~1--21, 2017.
+
+\end{thebibliography}
+
+% biography section
+%
+% If you have an EPS/PDF photo (graphicx package needed) extra braces are
+% needed around the contents of the optional argument to biography to prevent
+% the LaTeX parser from getting confused when it sees the complicated
+% \includegraphics command within an optional argument. (You can create
+% your own custom biographies by commenting out the above and using the
+% unindented \begin{biography} form instead to achieve this.)
+%
+% \begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{mshell}}]{Michael Shell}
+% Biography text here.
+% \end{IEEEbiography}
+
+% if you will not have a photo at all:
+% \begin{IEEEbiographynoskip}{Michael Shell}
+% Biography text here.
+% \end{IEEEbiographynoskip}
+
+% insert where needed to balance the two columns on the last page with
+% biographies
+%\newpage
+
+% You can push biographies down or up by placing
+% a \vfill before or after them. The appropriate
+% use of \vfill depends on what kind of text is
+% on the last page and whether or not the columns
+% are being equalized.
+
+%\vfill
+
+% Can be used to pull up biographies so that the bottom of the last one
+% is flush with the other column.
+%\enlargethispage{-5in}
+
+\end{document}

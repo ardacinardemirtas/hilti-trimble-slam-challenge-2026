@@ -258,24 +258,18 @@ def main():
         image_rows.append((image_id, qw_c, qx_c, qy_c, qz_c,
                            t_cfw[0], t_cfw[1], t_cfw[2], name, pts2d))
 
-    # Build points3D list with track (image_id, point2d_idx)
-    # point2d_idx = index of the observation in that image's pts2d list
-    p2d_index = defaultdict(lambda: defaultdict(int))
+    # Build reverse index: point3d_id → list of (image_id, point2d_idx)
+    point3d_track: dict[int, list] = defaultdict(list)
     for irow in image_rows:
         iid = irow[0]; pts2d = irow[9]
         for idx, (u, v, pid) in enumerate(pts2d):
-            p2d_index[iid][pid] = idx
+            if pid != -1:
+                point3d_track[pid].append((iid, idx))
 
     points3d_out = []
     for feat_id, pid in feat_to_point3d.items():
         X, Y, Z = feat_3d_pos[feat_id]
-        track = []
-        for irow in image_rows:
-            iid = irow[0]; pts2d = irow[9]
-            for idx, (u, v, p) in enumerate(pts2d):
-                if p == pid:
-                    track.append((iid, idx))
-                    break
+        track = point3d_track.get(pid, [])
         if track:
             points3d_out.append((pid, X, Y, Z, track))
 

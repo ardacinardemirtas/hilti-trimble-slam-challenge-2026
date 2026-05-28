@@ -29,7 +29,7 @@ class FeatureLogger(Node):
     def __init__(self, output_filename):
         super().__init__('feature_logger')
         self.sub = self.create_subscription(
-            PointCloud, 'loop_feats', self.callback, 10
+            PointCloud, '/ov_msckf/loop_feats', self.callback, 10
         )
         self.out = open(output_filename, 'w')
         self.out.write('# feat_id timestamp_s u v X_world Y_world Z_world\n')
