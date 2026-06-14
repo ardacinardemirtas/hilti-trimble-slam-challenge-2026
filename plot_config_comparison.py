@@ -3,10 +3,18 @@ Plot all available config results for a given run side by side.
 When a GT file exists the GT trajectory is overlaid and ATE (RMSE) is computed
 via Umeyama SE(3) alignment on matched timestamps.
 
-Usage: python3 plot_config_comparison.py <run_name> <out_png>
-  e.g. python3 plot_config_comparison.py floor_2_2025-05-05_run_1 /tmp/out.png
+Usage:
+    python3 plot_config_comparison.py <run_name> <out_png> [--results-dir DIR] [--gt-dir DIR]
+
+  e.g. python3 plot_config_comparison.py \\
+           floor_2_2025-05-05_run_1 /tmp/out.png \\
+           --results-dir results/ \\
+           --gt-dir groundtruth/
+
+RESULTS_DIR should contain per-config subdirectories matching the CONFIGS table below.
 """
 
+import argparse
 import sys
 import numpy as np
 import matplotlib
@@ -15,8 +23,15 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from scipy.spatial.transform import Rotation
 
-RESULTS  = Path("/cluster/scratch/ademirtas/results")
-GT_DIR   = Path("/cluster/scratch/ademirtas/code/hilti-trimble-slam-challenge-2026/groundtruth")
+_ap = argparse.ArgumentParser(add_help=False)
+_ap.add_argument('run_name', nargs='?', default=None)
+_ap.add_argument('out_png',  nargs='?', default=None)
+_ap.add_argument('--results-dir', default=None)
+_ap.add_argument('--gt-dir',      default=None)
+_args, _ = _ap.parse_known_args()
+
+RESULTS  = Path(_args.results_dir) if _args.results_dir else Path("results")
+GT_DIR   = Path(_args.gt_dir)      if _args.gt_dir      else Path("groundtruth")
 
 # (label, path template, slowrate flag)
 CONFIGS = [

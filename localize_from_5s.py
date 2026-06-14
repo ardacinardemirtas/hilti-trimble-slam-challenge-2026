@@ -11,8 +11,13 @@ Mirrors the logic of static_transform_publisher.py from challenge_tools_ros:
      cam0 poses in the floorplan map frame.
 
 Output: localization_submission/<run_name>.txt  (flat, submission-ready)
+
+Usage:
+    python3 localize_from_5s.py --slam-dir /path/to/slam/trajectories/
+    python3 localize_from_5s.py --slam-dir results/ --out-dir my_localization/
 """
 
+import argparse
 import csv
 import math
 import numpy as np
@@ -107,9 +112,19 @@ T_imu_cam0 = np.linalg.inv(T_cam0_imu)                          # 4×4
 
 # ── Load GT init poses ────────────────────────────────────────────────────────
 
-INIT_GT_CSV = ROOT / 'groundtruth' / 'init_gt_poses.csv'
-SLAM_DIR    = Path('/cluster/scratch/ademirtas/results/openvins_submission')
-OUT_DIR     = ROOT / 'localization_submission'
+ap = argparse.ArgumentParser(description=__doc__,
+                             formatter_class=argparse.RawDescriptionHelpFormatter)
+ap.add_argument('--slam-dir', required=True,
+                help='Directory containing SLAM TUM trajectory files (*.txt)')
+ap.add_argument('--out-dir', default=None,
+                help='Output directory (default: localization_submission/ next to this script)')
+ap.add_argument('--init-gt', default=None,
+                help='Path to init_gt_poses.csv (default: groundtruth/init_gt_poses.csv)')
+args = ap.parse_args()
+
+INIT_GT_CSV = Path(args.init_gt) if args.init_gt else ROOT / 'groundtruth' / 'init_gt_poses.csv'
+SLAM_DIR    = Path(args.slam_dir)
+OUT_DIR     = Path(args.out_dir) if args.out_dir else ROOT / 'localization_submission'
 OUT_DIR.mkdir(exist_ok=True)
 
 init_poses = {}
