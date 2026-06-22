@@ -103,6 +103,10 @@ SE2 alignment is computed using the provided ground-truth anchor pose at t ≈ 1
 ├── config/rviz/                     # RViz configs
 ├── groundtruth/                     # GT TUM files for 5 early-release runs
 ├── floorplans/                      # Building floorplan PNG images (with/without windows)
+├── colmap_only_approach/             # Initial COLMAP-only SfM attempt (abandoned)
+│   ├── slurm_scripts_jointBA/       #   Standard joint BA pipeline (floor_1)
+│   └── slurm_scripts_jointBA_robust/#   Relaxed-threshold variant (floor_2)
+│
 ├── BEST_CONFIG_SELECTION.md         # Per-run config choices with verification table
 └── REPORT.md                        # Full technical report
 ```
