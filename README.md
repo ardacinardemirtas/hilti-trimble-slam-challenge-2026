@@ -10,7 +10,9 @@
 
 </div>
 
-This repository contains our solution to the [Hilti × Trimble 360 Visual-Inertial SLAM Challenge 2026](https://hilti-trimble-challenge.com), which benchmarks SLAM and localization algorithms on active construction sites using an Insta360 One-RS dual fisheye camera with IMU.
+This repository contains our solution to the [Hilti × Trimble 360 Visual-Inertial SLAM Challenge 2026](https://hilti-trimble-challenge.com), which benchmarks SLAM and localization algorithms on active construction sites using an Insta360 One-RS dual fisheye camera with IMU. 
+
+Due to large ROSbag file sizes, please find sample ROSbags under [Official Hilti × Trimble 360 Visual-Inertial SLAM Challenge 2026 dataset](https://drive.google.com/drive/u/1/folders/1BWFIfEL40Nvj-yeyre5O9dOiYCTWatv5).
 
 ---
 
