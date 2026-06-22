@@ -33,7 +33,17 @@ Dynamic initialization at 0.5× playback rate was the single most impactful tech
 
 ---
 
-## Approach
+### Initial Attempt — COLMAP-only SfM (abandoned)
+
+Before settling on the OpenVINS pipeline, we attempted a pure COLMAP Structure-from-Motion approach. The pipeline consisted of the following steps: feature extraction → sequential matching (with vocabulary tree loop detection) → incremental mapper → image registrator → point triangulator → second registrator pass → final bundle adjustment (→ TXT export). Two variants of such a pipeline are included in the `colmap_only_approach/` folder:
+
+- **`slurm_scripts_jointBA`** — standard joint BA with fixed intrinsics and rig extrinsics
+- **`slurm_scripts_jointBA_robust`** — relaxed registration thresholds and distortion refinement for harder sequences
+
+This approach was abandoned because pure SfM could not reliably register all frames on construction-site sequences with large textureless regions and repetitive structure. The visual-inertial pipeline (OpenVINS + optional VI-BA) proved far more robust.
+
+
+## Final Approach
 
 The pipeline has two stages:
 
