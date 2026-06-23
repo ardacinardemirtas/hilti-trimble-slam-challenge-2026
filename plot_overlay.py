@@ -3,9 +3,16 @@ Plot all available config results for a given run overlaid on one set of axes.
 Non-diverged trajectories are Umeyama-aligned to a common reference (the first
 non-diverged non-upsampled result). Diverged ones are shown faded in the background.
 
-Usage: python3 plot_overlay.py <run_name> <out_png>
+Usage:
+    python3 plot_overlay.py <run_name> <out_png> [--results-dir DIR] [--gt-dir DIR]
+
+  e.g. python3 plot_overlay.py \\
+           floor_2_2025-05-05_run_1 /tmp/out.png \\
+           --results-dir results/ \\
+           --gt-dir groundtruth/
 """
 
+import argparse
 import sys
 import numpy as np
 import matplotlib
@@ -13,8 +20,15 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-RESULTS = Path("/cluster/scratch/ademirtas/results")
-GT_DIR  = Path("/cluster/scratch/ademirtas/code/hilti-trimble-slam-challenge-2026/groundtruth")
+_ap = argparse.ArgumentParser(add_help=False)
+_ap.add_argument('run_name', nargs='?', default=None)
+_ap.add_argument('out_png',  nargs='?', default=None)
+_ap.add_argument('--results-dir', default=None)
+_ap.add_argument('--gt-dir',      default=None)
+_args, _ = _ap.parse_known_args()
+
+RESULTS = Path(_args.results_dir) if _args.results_dir else Path("results")
+GT_DIR  = Path(_args.gt_dir)      if _args.gt_dir      else Path("groundtruth")
 
 CONFIGS = [
     ("baseline (1×)",        "openvins/{floor}/{date}/{run}/{name}.txt",           False),

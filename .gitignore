@@ -1,0 +1,49 @@
+# Data (too large for git)
+data/
+results/
+predictions/
+plots/
+best_results/
+submission/
+colmap_init/
+colmap_with_tracks/
+euroc_*/
+*.db3
+*.db
+
+# Submission artifacts (contain actual results — share selectively)
+localization_submission/
+localization_submission.zip
+*.npy
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+dist/
+build/
+
+# ROS2 build artifacts
+install/
+log/
+build/
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# All markdown notes except README
+*.md
+!README.md
+bare_jrnl.tex
+config/procman.pmd
+
+# HPC / cluster scripts (site-specific)
+*.sbatch
+build_orbslam3.sh
+orbslam3.def
+build_orbslam3_container.sbatch
